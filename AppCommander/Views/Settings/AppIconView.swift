@@ -98,8 +98,8 @@ struct AppIconView: View {
     let icons: [AppIcon] = [AppIcon(displayName: "Default", iconName: nil, author: "BomberFish", lore: "Tried and true."), AppIcon(displayName: "DarkCommander", iconName: "AppIcon2", author: "BomberFish", lore: "Come to the dark side, we have cookies."), AppIcon(displayName: "LightCommander", iconName: "AppIcon3", author: "BomberFish", lore: "My eyes!!!"), AppIcon(displayName: "“App-solute Solver”", iconName: "AppIcon4", author: "BomberFish", lore: "Hmmm yes totally not a massive reference to a specific sci-fi dystopian webseries..."), AppIcon(displayName: "Classic", iconName: "AppIcon5", author: "BomberFish", lore: "This one was never actually the default in any build of AppCommander. Not any *public* build, anyways...")]
     var body: some View {
         ZStack {
-            GradientView()
-                .edgesIgnoringSafeArea(.all)
+           // GradientView()
+             //   .edgesIgnoringSafeArea(.all)
             ScrollView {
                 LazyVGrid(columns: gridItemLayout, alignment: .center) {
                     ForEach(icons) {icon in

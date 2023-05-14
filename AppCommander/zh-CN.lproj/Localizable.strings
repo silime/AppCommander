@@ -62,4 +62,8 @@
     Warning = "\U8b66\U544a\Uff01";
     Whitelist = "\U767d\U540d\U5355";
     Widgets = "\U5c0f\U7ec4\U4ef6";
+    "Show System Applications" = "\U663e\U793a\U7cfb\U7edf\U5e94\U7528";
+    "Alternate App Icons" = "\U0041\U0070\U0070\U5019\U8865\U56fe\U6807";
+    "Alternate Icons" = "\U5019\U8865\U56fe\U6807";
+    "Loading..."  = "\U52a0\U8f7d\U4e2d";
 }

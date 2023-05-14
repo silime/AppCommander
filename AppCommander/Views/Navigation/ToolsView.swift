@@ -13,8 +13,8 @@ struct ToolsView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                GradientView()
-                    .edgesIgnoringSafeArea(.all)
+               // GradientView()
+                    //.edgesIgnoringSafeArea(.all)
                 ScrollView {
                     LazyVGrid(columns: gridItemLayout, alignment: .center) {
                         NavigationLink(destination: { WhitelistView() }, label: {

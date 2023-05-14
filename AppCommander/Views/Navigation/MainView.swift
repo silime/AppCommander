@@ -12,13 +12,25 @@ struct MainView: View {
     @State var debugEnabled: Bool = UserDefaults.standard.bool(forKey: "DebugEnabled")
 
     // MARK: - Literally the worst code ever. Will I fix it? No!
-
+    @State private var showSysApp = false
     @Binding public var allApps: [SBApp]
     @State var apps = [SBApp(bundleIdentifier: "ca.bomberfish.AppCommander.GuruMeditation", name: "Application Error", bundleURL: URL(string: "/")!, version: "0.6.9", pngIconPaths: ["this-app-does-not-have-an-icon-i-mean-how-could-anything-have-this-string-lmao"], hiddenFromSpringboard: false)]
     var body: some View {
+        let binding = Binding {
+                    showSysApp
+                } set: {
+                    print("Show System Application \($0)")
+                    showSysApp=$0
+                    if !showSysApp {
+                        apps = allApps.filter{!$0.bundleIdentifier.starts(with: "com.apple.")  }
+                        //print(allApps)
+                    }else{
+                        apps=allApps
+                    }
+                }
         NavigationView {
             ZStack {
-                GradientView()
+                //GradientView()
                 ScrollView {
                     VStack {
                         VStack(alignment: .leading) {
@@ -76,7 +88,9 @@ struct MainView: View {
                 .onChange(of: searchText) { searchText in
                     
                     if !searchText.isEmpty {
-                        apps = allApps.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+                        apps = allApps.filter { $0.name.localizedCaseInsensitiveContains(searchText)
+                            
+                        }
                     } else {
                         apps = allApps
                     }
@@ -90,15 +104,16 @@ struct MainView: View {
                                 }, label: {
                                     Label("None", systemImage: "list.bullet")
                                 })
+                                Toggle("Show System Applications", isOn: binding)
                                 Menu("Alphabetical") {
                                     Button(action: {
-                                        apps = allApps.sorted { $0.name < $1.name }
+                                        apps = apps.sorted { $0.name < $1.name }
                                     }, label: {
                                         Label("Case-sensitive", systemImage: "character")
                                     })
                                     
                                     Button(action: {
-                                        apps = allApps.sorted { $0.name.lowercased() < $1.name.lowercased() }
+                                        apps = apps.sorted { $0.name.lowercased() < $1.name.lowercased() }
                                     }, label: {
                                         Label("Case-insensitive", systemImage: "textformat")
                                     })
@@ -115,7 +130,13 @@ struct MainView: View {
                     }
                 }
                 .onAppear {
-                    apps = allApps
+                    //apps = allApps
+                    if !showSysApp {
+                        apps = allApps.filter{!$0.bundleIdentifier.starts(with: "com.apple.")  }
+                        //print(allApps)
+                    }else{
+                        apps=allApps
+                    }
                 }
                 //            .onAppear {
                 // #if targetEnvironment(simulator)
@@ -136,6 +157,7 @@ struct MainView: View {
                     //                if !isUnsandboxed {
                     //                    isUnsandboxed = MDC.unsandbox()
                     //                } else {
+                    print("refresh")
                     do {
                         allApps = try ApplicationManager.getApps()
                     } catch {
