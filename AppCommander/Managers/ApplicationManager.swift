@@ -73,7 +73,7 @@ enum ApplicationManager {
         do {
             let uuid = UUID().uuidString
             let payloaddir = FileManager.default.temporaryDirectory.appendingPathComponent(uuid).appendingPathComponent("Payload")
-            let filename = app.name + "_" + app.version + "_" + uuid
+            let filename = app.name + "_" + app.version
             if !(UserDefaults.standard.bool(forKey: "AbsoluteSolverDisabled")) {
                 try? AbsoluteSolver.delete(at: FileManager.default.temporaryDirectory.appendingPathComponent(uuid), progress: {message in
                     print(message)
@@ -91,20 +91,33 @@ enum ApplicationManager {
             } else {
                 try fm.copyItem(at: app.bundleURL, to: payloaddir.appendingPathComponent(app.bundleURL.lastPathComponent))
             }
+            var fileList = [payloaddir]
+            let metaData = payloaddir.deletingLastPathComponent().appendingPathComponent("iTunesMetadata.plist")
             print("copied \(app.bundleURL) to \(payloaddir.appendingPathComponent(app.bundleURL.lastPathComponent))")
+            
+            do {
+                try AbsoluteSolver.copy(at: app.bundleURL.deletingLastPathComponent().appendingPathComponent("iTunesMetadata.plist"), to: metaData, progress: {message in
+                    print(message)
+                })
+                print("try to copy iTunesMetadata.plist from \(metaData)")
+                fileList.append(metaData)
+            } catch {
+                print("copied iTunesMetadata.plist error")
+            }
+            
             // try FileManager().zipItem(at: payloaddir, to: FileManager.default.temporaryDirectory.appendingPathComponent(filename).appendingPathExtension("ipa"))
-            try Compression.shared.compress(paths: [payloaddir], outputPath: FileManager.default.temporaryDirectory.appendingPathComponent(filename).appendingPathExtension("ipa"), format: .zip)
+            try Compression.shared.compress(paths: fileList, outputPath: FileManager.default.temporaryDirectory.appendingPathComponent(uuid+"/"+filename).appendingPathExtension("ipa"), format: .zip)
             UIApplication.shared.dismissAlert(animated: false)
-            print("zipped \(payloaddir) to \(FileManager.default.temporaryDirectory.appendingPathComponent(filename).appendingPathExtension("ipa"))")
+            print("zipped \(payloaddir) to \(FileManager.default.temporaryDirectory.appendingPathComponent(uuid+"/"+filename).appendingPathExtension("ipa"))")
             // sleep(UInt32(0.5))
             if !(UserDefaults.standard.bool(forKey: "AbsoluteSolverDisabled")) {
-                try? AbsoluteSolver.delete(at: FileManager.default.temporaryDirectory.appendingPathComponent(uuid), progress: {message in
+                try? AbsoluteSolver.delete(at: FileManager.default.temporaryDirectory.appendingPathComponent(uuid+"/Payload"), progress: {message in
                     print(message)
                 })
             } else {
-                try? FileManager.default.removeItem(at: FileManager.default.temporaryDirectory.appendingPathComponent(uuid))
+                try? FileManager.default.removeItem(at: FileManager.default.temporaryDirectory.appendingPathComponent(uuid+"/Payload"))
             }
-            return FileManager.default.temporaryDirectory.appendingPathComponent(filename).appendingPathExtension("ipa")
+            return FileManager.default.temporaryDirectory.appendingPathComponent(uuid+"/"+filename).appendingPathExtension("ipa")
         } catch {
             print("error at the next step")
             Haptic.shared.notify(.error)
