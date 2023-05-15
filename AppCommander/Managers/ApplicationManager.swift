@@ -15,14 +15,14 @@ import AbsoluteSolver
 
 // stolen from appabetical :trolley:
 // I do not know how this code works but all I know is that it does.
-enum ApplicationManager {
+public class ApplicationManager {
     private static var fm = FileManager.default
     
     private static let systemApplicationsUrl = URL(fileURLWithPath: "/Applications", isDirectory: true)
     private static let userApplicationsUrl = URL(fileURLWithPath: "/var/containers/Bundle/Application", isDirectory: true)
     
     // MARK: - Goofy ahh function
-
+    static var appsinfo :[Appinfo] = [Appinfo]();
     public static func getDataDir(bundleID: String) throws -> URL {
         let fm = FileManager.default
         var returnedurl = URL(string: "none")
@@ -34,7 +34,11 @@ enum ApplicationManager {
         } catch {
             throw "Could not access /var/mobile/Containers/Data/Application.\n\(error.localizedDescription)"
         }
-
+        for appinfo in appsinfo {
+            if  appinfo.bundleIdentifier == bundleID && (!appinfo.dataURL.path.contains("none")){
+                return appinfo.dataURL
+            }
+        }
         for dir in dirlist {
             // print(dir)
             let mmpath = "/var/mobile/Containers/Data/Application/" + dir + "/.com.apple.mobile_container_manager.metadata.plist"
@@ -44,7 +48,7 @@ enum ApplicationManager {
                 if fm.fileExists(atPath: mmpath) {
                     if !(UserDefaults.standard.bool(forKey: "AbsoluteSolverDisabled")) {
                         mmDict = try PropertyListSerialization.propertyList(from: try AbsoluteSolver.readFile(path: mmpath, progress: {message in
-                            print(message)
+                          //  print(message)
                         }), options: [], format: nil) as? [String: Any] ?? [:]
                     } else {
                         mmDict = try PropertyListSerialization.propertyList(from: Data(contentsOf: URL(fileURLWithPath: mmpath)), options: [], format: nil) as? [String: Any] ?? [:]
@@ -54,6 +58,16 @@ enum ApplicationManager {
                     if mmDict["MCMMetadataIdentifier"] as! String == bundleID {
                         returnedurl = URL(fileURLWithPath: "/var/mobile/Containers/Data/Application").appendingPathComponent(dir)
                     }
+                    for i in 0..<appsinfo.count {
+                        if appsinfo[i].bundleIdentifier == mmDict["MCMMetadataIdentifier"] as! String {
+                            appsinfo[i].dataURL = URL(fileURLWithPath: "/var/mobile/Containers/Data/Application").appendingPathComponent(dir)
+                        }
+                    }
+            
+//                    if appsinfo.contains(where: {$0.bundleIdentifier==bundleID}) == false {
+////                        appsinfo.append()
+//                    }
+                
                 } else {
                     print("WARNING: Directory \(dir) does not have a metadata plist, skipping.")
                 }
@@ -67,8 +81,73 @@ enum ApplicationManager {
             throw "Error getting data directory for app \(bundleID)"
         }
     }
+    public static func getAppGroupDir(bundleID: String) throws -> URL {
+        let fm = FileManager.default
+        var returnedurl = URL(string: "none")
+        var dirlist = [""]
 
-    public static func exportIPA(app: SBApp) throws -> URL {
+        do {
+            dirlist = try fm.contentsOfDirectory(atPath: "/var/mobile/Containers/Shared/AppGroup")
+            // print(dirlist)
+        } catch {
+            throw "Could not access /var/mobile/Containers/Shared/AppGroup.\n\(error.localizedDescription)"
+        }
+        for appinfo in appsinfo {
+            if  appinfo.bundleIdentifier == bundleID && (!appinfo.groupURL.path.contains("none")){
+                return appinfo.groupURL
+            }
+        }
+        for dir in dirlist {
+            // print(dir)
+            let mmpath = "/var/mobile/Containers/Shared/AppGroup/" + dir + "/.com.apple.mobile_container_manager.metadata.plist"
+            // print(mmpath)
+            do {
+                var mmDict: [String: Any]
+                if fm.fileExists(atPath: mmpath) {
+                    if !(UserDefaults.standard.bool(forKey: "AbsoluteSolverDisabled")) {
+                        mmDict = try PropertyListSerialization.propertyList(from: try AbsoluteSolver.readFile(path: mmpath, progress: {message in
+                           // print(message)
+                        }), options: [], format: nil) as? [String: Any] ?? [:]
+                    } else {
+                        mmDict = try PropertyListSerialization.propertyList(from: Data(contentsOf: URL(fileURLWithPath: mmpath)), options: [], format: nil) as? [String: Any] ?? [:]
+                    }
+                    
+                   //  print(mmDict as Any)
+                 //   print(dir)
+//                    if dir == "23273DB2-782D-4E7C-953E-2E2075B6B57A"{
+//                         print(mmDict as Any)
+//                    }
+                    //print(mmDict["MCMMetadataIdentifier"] as! String)
+                    if mmDict["MCMMetadataIdentifier"] as! String == ("group."+bundleID) {
+                        returnedurl = URL(fileURLWithPath: "/var/mobile/Containers/Shared/AppGroup").appendingPathComponent(dir)
+
+                    }
+                    for i in 0..<appsinfo.count {
+                        if (("group."+appsinfo[i].bundleIdentifier)) == mmDict["MCMMetadataIdentifier"] as! String {
+                            print("set found groupURL")
+                            appsinfo[i].groupURL = returnedurl!
+                        }
+                    }
+                    
+                    print("init group dir")
+                } else {
+                    print("WARNING: Directory \(dir) does not have a metadata plist, skipping.")
+                }
+            } catch {
+                throw ("Could not get data of \(mmpath): \(error.localizedDescription)")
+            }
+        }
+        for i in 0..<appsinfo.count {
+            if appsinfo[i].groupURL.path.contains("none"){
+                appsinfo[i].groupURL=URL(fileURLWithPath: "not_found")
+            }
+            
+        }
+    
+        return returnedurl!
+    }
+
+     static func exportIPA(app: SBApp) throws -> URL {
         // UIApplication.shared.progressAlert(title: "Exporting \(app.name)...")
         do {
             let uuid = UUID().uuidString
@@ -169,7 +248,7 @@ enum ApplicationManager {
             guard let CFBundleIdentifier = infoPlist["CFBundleIdentifier"] as? String else { UIApplication.shared.alert(body: "App \(bundleUrl.absoluteString) doesn't have bundleid"); throw ("App \(bundleUrl.absoluteString) doesn't have bundleid") }
                 
             var app = SBApp(bundleIdentifier: CFBundleIdentifier, name: "Unknown", bundleURL: bundleUrl, version: "Unknown", pngIconPaths: [], hiddenFromSpringboard: false)
-                
+            var appinfo = Appinfo(bundleIdentifier: CFBundleIdentifier, dataURL: URL(fileURLWithPath: "none"), groupURL: URL(fileURLWithPath: "none"))
             if infoPlist.keys.contains("CFBundleShortVersionString") {
                 guard let CFBundleShortVersionString = infoPlist["CFBundleShortVersionString"] as? String else { UIApplication.shared.alert(body: "Error reading display name for \(bundleUrl.absoluteString)"); throw ("Error reading display name for \(bundleUrl.absoluteString)") }
                 app.version = CFBundleShortVersionString
@@ -217,6 +296,7 @@ enum ApplicationManager {
             }
                 
             apps.append(app)
+            appsinfo.append(appinfo)
         }
             
         return apps
@@ -229,7 +309,14 @@ struct SBApp: Identifiable, Equatable {
     var name: String
     var bundleURL: URL
     var version: String
-    
     var pngIconPaths: [String]
     var hiddenFromSpringboard: Bool
+//    var dataURL: URL
+//    var groupURL: URL
+}
+struct Appinfo: Identifiable, Equatable{
+    var id = UUID()
+    var bundleIdentifier: String
+    var dataURL: URL
+    var groupURL: URL
 }

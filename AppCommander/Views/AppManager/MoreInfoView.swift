@@ -13,6 +13,7 @@ struct MoreInfoView: View {
     @State private var appsize: UInt64 = 0
     @State private var docsize: UInt64 = 0
     @State private var datadir: String = ""
+    @State private var groupdir: String = ""
     @State private var action: Int? = 0
     
     var body: some View {
@@ -59,6 +60,17 @@ struct MoreInfoView: View {
                     }
                     Button(action: { UIPasteboard.general.string = datadir }, label: { Label("Copy", systemImage: "doc.on.clipboard") })
                 }
+            Text("AppGroup Data directory: \(groupdir)")
+                .contextMenu {
+                    Button(action: { self.action = 2 }, label: { Label("Open in built-in browser", systemImage: "folder.badge.gearshape") })
+                    if isFilzaInstalled() {
+                        Button(action: { openInFilza(path: groupdir) }, label: { Label("Open in Filza", systemImage: "arrow.up.forward.app") })
+                    }
+                    if isSantanderInstalled() {
+                        Button(action: { openInSantander(path: groupdir) }, label: { Label("Open in Santander", systemImage: "arrow.up.forward.app") })
+                    }
+                    Button(action: { UIPasteboard.general.string = groupdir }, label: { Label("Copy", systemImage: "doc.on.clipboard") })
+                }
             Text("App Size: \(ByteCountFormatter().string(fromByteCount: Int64(appsize)))")
                 .contextMenu {
                     Button(action: { UIPasteboard.general.string = ByteCountFormatter().string(fromByteCount: Int64(appsize)) }, label: { Label("Copy", systemImage: "doc.on.clipboard") })
@@ -74,6 +86,7 @@ struct MoreInfoView: View {
                 appsize = try FileManager.default.allocatedSizeOfDirectory(at: sbapp.bundleURL)
                 docsize = try FileManager.default.allocatedSizeOfDirectory(at: ApplicationManager.getDataDir(bundleID: sbapp.bundleIdentifier))
                 datadir = try ApplicationManager.getDataDir(bundleID: sbapp.bundleIdentifier).path
+                groupdir = try ApplicationManager.getAppGroupDir(bundleID: sbapp.bundleIdentifier).path
             } catch {
                 UIApplication.shared.alert(body: error.localizedDescription)
             }
@@ -84,6 +97,7 @@ struct MoreInfoView: View {
                 appsize = try FileManager.default.allocatedSizeOfDirectory(at: sbapp.bundleURL)
                 docsize = try FileManager.default.allocatedSizeOfDirectory(at: ApplicationManager.getDataDir(bundleID: sbapp.bundleIdentifier))
                 datadir = try ApplicationManager.getDataDir(bundleID: sbapp.bundleIdentifier).path
+                groupdir = try ApplicationManager.getAppGroupDir(bundleID: sbapp.bundleIdentifier).path
             } catch {
                 UIApplication.shared.alert(body: error.localizedDescription)
             }

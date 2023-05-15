@@ -57,9 +57,10 @@ public class BackupServices {
                 try fm.copyItem(at: applicationContainerURL, to: containerURL)
             }
             
-            //        for (groupID, groupContainerURL) in application.proxy.groupContainerURLs() {
-            //            try FileManager.default.copyItem(at: groupContainerURL, to: groups.appendingPathComponent(groupID))
-            //        }
+           // for (groupID, groupContainerURL) in application.proxy.groupContainerURLs() {
+             //   try FileManager.default.copyItem(at: groupContainerURL, to: groups.appendingPathComponent(groupID))
+            //}
+            try FileManager.default.copyItem(at: ApplicationManager.getAppGroupDir(bundleID: application.bundleIdentifier), to: groups.appendingPathComponent("group."+application.bundleIdentifier))
             print("Compressing...")
             progress("Compressing...")
             try Compression.shared.compress(paths: [stagingDirectory], outputPath: docURL.appendingPathComponent(filename), format: .zip, filenameExcludes: ["v0", ".com.apple.mobile_container_manager.metadata.plist"])
@@ -178,6 +179,7 @@ public class BackupServices {
                 //        for (groupID, groupContainerURL) in application.proxy.groupContainerURLs() {
                 //            try FileManager.default.copyItem(at: groupContainerURL, to: groups.appendingPathComponent(groupID))
                 //        }
+                
                 print("Compressing...")
                 progress("Compressing...")
                 try Compression.shared.compress(paths: [stagingDirectory], outputPath: docURL.appendingPathComponent(filename), format: .zip, filenameExcludes: ["v0", ".com.apple.mobile_container_manager.metadata.plist"])
@@ -246,10 +248,11 @@ public class BackupServices {
         
             print("parentDirWeWant contents = \(try FileManager.default.contentsOfDirectory(at: parentDirWeWant, includingPropertiesForKeys: nil))")
         
-//        let unzippedGroupsURL = parentDirWeWant
-//            .appendingPathComponent("Groups")
+        let unzippedGroupsURL = parentDirWeWant
+            .appendingPathComponent("Groups")
             do {
                 let applicationContainerURL = try ApplicationManager.getDataDir(bundleID: app.bundleIdentifier)
+                let applicationGroupURL = try ApplicationManager.getAppGroupDir(bundleID: app.bundleIdentifier)
                 // remove app's current container URL
                 for item in try FileManager.default.contentsOfDirectory(at: applicationContainerURL,
                                                                         includingPropertiesForKeys: nil)
@@ -280,21 +283,26 @@ public class BackupServices {
                     }
                 }
                 
-                //        print("PART 2: Operating on the Groups dir")
-                //        if FileManager.default.fileExists(atPath: unzippedGroupsURL.path) {
-                //            for appGroupID in try FileManager.default.contentsOfDirectory(at: unzippedGroupsURL, includingPropertiesForKeys: nil) {
-                //                if let existingContainerURL = app.proxy.groupContainerURLs()[appGroupID.lastPathComponent] {
-                //                    for item in try FileManager.default.contentsOfDirectory(at: existingContainerURL, includingPropertiesForKeys: nil) {
-                //                        try FileManager.default.removeItem(at: item)
-                //                    }
-                //
-                //                    for item in try FileManager.default.contentsOfDirectory(at: appGroupID, includingPropertiesForKeys: nil) {
-                //                        try FileManager.default.moveItem(at: item,
-                //                                                         to: existingContainerURL.appendingPathComponent(item.lastPathComponent))
-                //                    }
-                //                }
-                //            }
-                //        }
+                        print("PART 2: Operating on the Groups dir")
+                        if FileManager.default.fileExists(atPath: unzippedGroupsURL.path) {
+                            for appGroupID in try FileManager.default.contentsOfDirectory(at: unzippedGroupsURL, includingPropertiesForKeys: nil) {
+                                print(appGroupID)
+                                if  !applicationGroupURL.path.contains("not_found") && !applicationGroupURL.path.contains("none")  {
+                                    for item in try FileManager.default.contentsOfDirectory(at: applicationGroupURL, includingPropertiesForKeys: nil) {
+                                        print(item.path)
+                                        if item.path.contains(".com.apple.mobile_container_manager.metadata.plist") {
+                                            continue
+                                        }
+                                        try FileManager.default.removeItem(at: item)
+                                    }
+
+                                    for item in try FileManager.default.contentsOfDirectory(at: appGroupID, includingPropertiesForKeys: nil) {
+                                        try FileManager.default.moveItem(at: item,
+                                                                         to: applicationGroupURL.appendingPathComponent(item.lastPathComponent))
+                                    }
+                                }
+                            }
+                        }
                 
                 print("WE ARE DONE. GOODNIGHT!")
                 progress("Finishing up...")
