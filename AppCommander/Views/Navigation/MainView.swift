@@ -88,11 +88,16 @@ struct MainView: View {
                 .onChange(of: searchText) { searchText in
                     
                     if !searchText.isEmpty {
-                        apps = allApps.filter { $0.name.localizedCaseInsensitiveContains(searchText)
+                        apps = apps.filter { $0.name.localizedCaseInsensitiveContains(searchText)
                             
                         }
                     } else {
-                        apps = allApps
+                        if !showSysApp {
+                            apps = allApps.filter{!$0.bundleIdentifier.starts(with: "com.apple.")  }
+                            //print(allApps)
+                        }else{
+                            apps=allApps
+                        }
                     }
                 }
                 .toolbar {
